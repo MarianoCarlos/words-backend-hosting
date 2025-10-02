@@ -3,3 +3,4 @@ mediapipe
 flask
 scikit-learn==1.2.0
 numpy
+flask-cors

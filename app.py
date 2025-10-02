@@ -3,6 +3,7 @@ import cv2
 import base64
 import numpy as np
 from flask import Flask, request, jsonify
+from flask_cors import CORS   # 🔹 add this
 from inference_classifier import GestureClassifier
 
 # Initialize Flask app
@@ -12,10 +13,13 @@ app = Flask(__name__)
 ENV = os.getenv("ENV", "development")
 if ENV == "production":
     allowed_origins = [
-        "https://www.insyncweb.site",   # 🔹 your Vercel frontend
+        "https://www.insyncweb.site",   # 🔹 your deployed Vercel frontend
     ]
 else:
     allowed_origins = ["*"]  # during local dev
+
+# Enable CORS
+CORS(app, resources={r"/*": {"origins": allowed_origins}})
 
 # Load ASL model
 classifier = GestureClassifier()
@@ -46,8 +50,6 @@ def predict_api():
             return jsonify({"error": "Invalid frame data"}), 400
 
         prediction, _ = classifier.predict(frame)
-
-        # Always return a string, even if prediction is None
         return jsonify({"prediction": prediction or ""})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
