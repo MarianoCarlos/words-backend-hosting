@@ -13,12 +13,13 @@ ENV = os.getenv("ENV", "development")
 
 if ENV == "production":
     allowed_origins = [
-        "https://www.insyncweb.site"  # 🔹 Replace with your real Vercel domain
+        "https://www.insyncweb.site",     # 🔹 your frontend (Vercel domain)
     ]
 else:
-    allowed_origins = ["http://localhost:3000"] # allow all during local dev
+    allowed_origins = ["*"]  # during local dev
 
-socketio = SocketIO(app, cors_allowed_origins=allowed_origins)
+# Initialize SocketIO with eventlet support
+socketio = SocketIO(app, cors_allowed_origins=allowed_origins, async_mode="eventlet")
 
 # Load ASL model
 classifier = GestureClassifier()
@@ -52,4 +53,9 @@ def index():
     return f"ASL Backend Running 🚀 (ENV={ENV})"
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    import eventlet
+    import eventlet.wsgi
+    eventlet.monkey_patch()  # ensures stdlib works with eventlet
+
+    port = int(os.getenv("PORT", 5000))
+    socketio.run(app, host="0.0.0.0", port=port)
