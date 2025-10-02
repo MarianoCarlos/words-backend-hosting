@@ -9,37 +9,32 @@ from inference_classifier import GestureClassifier
 # Initialize Flask app
 app = Flask(__name__)
 
-# Detect environment for CORS
-ENV = os.getenv("ENV", "development")
-if ENV == "production":
-    allowed_origins = [
-        "https://www.insyncweb.site",   # 🔹 your deployed Vercel frontend
-        "http://localhost:3000",  # 🔹 for local dev / testing
-    ]
-else:
-    allowed_origins = ["*"]  # during local dev / testing
-
-# ✅ Enable CORS
+# ✅ Enable CORS (local + Vercel frontend)
 CORS(
     app,
-    resources={r"/*": {"origins": allowed_origins}},
+    resources={r"/*": {"origins": ["*", "http://localhost:3000", "https://www.insyncweb.site"]}},
     supports_credentials=True,
     allow_headers="*",
-    methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+    methods=["GET", "POST", "OPTIONS"],
 )
 
 # Load ASL model
 classifier = GestureClassifier()
 
-def decode_frame(img_base64):
-    """Convert base64 string from frontend into OpenCV image"""
+def decode_frame_base64(img_base64):
     try:
         img_bytes = base64.b64decode(img_base64.split(",")[1])
         arr = np.frombuffer(img_bytes, np.uint8)
         frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-        # Downscale for lower CPU usage (good for free-tier hosting)
-        frame = cv2.resize(frame, (224, 224))
-        return frame
+        return cv2.resize(frame, (224, 224))
+    except Exception:
+        return None
+
+def decode_frame_file(file):
+    try:
+        file_bytes = np.frombuffer(file.read(), np.uint8)
+        frame = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        return cv2.resize(frame, (224, 224))
     except Exception:
         return None
 
@@ -49,19 +44,16 @@ def predict_api():
     try:
         frame = None
 
-        # ✅ Case 1: JSON with base64
+        # Case 1: JSON (base64)
         if request.is_json:
             data = request.get_json()
             img_base64 = data.get("frame")
             if img_base64:
-                frame = decode_frame(img_base64)
+                frame = decode_frame_base64(img_base64)
 
-        # ✅ Case 2: FormData with file
+        # Case 2: FormData (file)
         if "file" in request.files:
-            file = request.files["file"]
-            file_bytes = np.frombuffer(file.read(), np.uint8)
-            frame = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-            frame = cv2.resize(frame, (224, 224))
+            frame = decode_frame_file(request.files["file"])
 
         if frame is None:
             return jsonify({"error": "No valid frame provided"}), 400
