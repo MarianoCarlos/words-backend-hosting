@@ -13,7 +13,7 @@ ENV = os.getenv("ENV", "development")
 
 if ENV == "production":
     allowed_origins = [
-        "https://www.insyncweb.site/"  # 🔹 Replace with your real Vercel domain
+        "https://www.insyncweb.site"  # 🔹 Replace with your real Vercel domain
     ]
 else:
     allowed_origins = ["http://localhost:3000"] # allow all during local dev
