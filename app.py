@@ -8,7 +8,7 @@ from inference_classifier import GestureClassifier
 # Initialize Flask app
 app = Flask(__name__)
 
-# ✅ Enable CORS for all origins (safe for dev / testing)
+# ✅ Enable CORS (open for dev; restrict in production)
 CORS(app)
 
 # Load ASL model
@@ -27,14 +27,12 @@ def decode_frame_file(file):
 @app.route("/predict", methods=["POST"])
 def predict_api():
     try:
-        frame = None
+        if "file" not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
 
-        # Only support FormData (file upload)
-        if "file" in request.files:
-            frame = decode_frame_file(request.files["file"])
-
+        frame = decode_frame_file(request.files["file"])
         if frame is None:
-            return jsonify({"error": "No valid frame provided"}), 400
+            return jsonify({"error": "Invalid frame data"}), 400
 
         prediction, _ = classifier.predict(frame)
         return jsonify({"prediction": prediction or ""})
@@ -45,7 +43,7 @@ def predict_api():
 # Root route
 @app.route("/")
 def home():
-    return "ASL Backend (REST API) is running ✅"
+    return "ASL Backend (REST API with FormData) is running ✅"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
