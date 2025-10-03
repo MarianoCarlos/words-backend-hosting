@@ -8,8 +8,8 @@ from inference_classifier import GestureClassifier
 # Initialize Flask app
 app = Flask(__name__)
 
-# ✅ Enable CORS (open for dev; restrict in production)
-CORS(app)
+# ✅ Enable CORS (open in dev, restrict in production)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Load ASL model
 classifier = GestureClassifier()
@@ -44,6 +44,11 @@ def predict_api():
 @app.route("/")
 def home():
     return "ASL Backend (REST API with FormData) is running ✅"
+
+# ✅ CORS Debug route
+@app.route("/test")
+def test():
+    return jsonify({"msg": "CORS check ✅"}), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
